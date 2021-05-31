@@ -10,23 +10,25 @@
 
 namespace Grale\WebDav;
 
+use DateTime;
 use Grale\WebDav\Property\DateTimeProperty;
+use Grale\WebDav\Property\LockDiscovery;
 use Grale\WebDav\Property\ResourceType;
 use Grale\WebDav\Property\SupportedLock;
-use Grale\WebDav\Property\LockDiscovery;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers Grale\WebDav\Resource
  */
-class ResourceTest extends \PHPUnit_Framework_TestCase
+class ResourceTest extends TestCase
 {
     /**
-     * @var \Grale\WebDav\Resource
+     * @var Resource
      */
     protected $collection;
 
     /**
-     * @var \Grale\WebDav\Resource
+     * @var Resource
      */
     protected $resource;
 
@@ -35,7 +37,7 @@ class ResourceTest extends \PHPUnit_Framework_TestCase
      */
     protected $lock;
 
-    public function setUp()
+    public function setUp(): void
     {
         $properties = new PropertySet();
         $properties['D:displayname'] = 'Example collection';
@@ -137,12 +139,12 @@ class ResourceTest extends \PHPUnit_Framework_TestCase
 
     public function testCreationDate()
     {
-        $this->assertEquals(new \DateTime('1997-12-01T18:27:21-08:00'), $this->resource->getCreationDate());
+        $this->assertEquals(new DateTime('1997-12-01T18:27:21-08:00'), $this->resource->getCreationDate());
     }
 
     public function testLastModified()
     {
-        $this->assertEquals(new \DateTime('Monday, 12-Jan-98 09:25:56 GMT'), $this->resource->getLastModified());
+        $this->assertEquals(new DateTime('Monday, 12-Jan-98 09:25:56 GMT'), $this->resource->getLastModified());
     }
 
     public function testSupportedLocks()
@@ -192,8 +194,8 @@ class ResourceTest extends \PHPUnit_Framework_TestCase
 
     public function testCollectionStat()
     {
-        $stats    = $this->collection->getStat();
-        $mode     = 0040777;
+        $stats = $this->collection->getStat();
+        $mode = 0040777;
 
         $this->assertEquals($mode, $stats[2], sprintf('Failed asserting that stat[2] equals to %o', $mode));
         $this->assertEquals(0, $stats[7], 'Failed asserting that stat[7] equals to 0 bytes');
@@ -208,13 +210,13 @@ class ResourceTest extends \PHPUnit_Framework_TestCase
 
     public function testResourceStat()
     {
-        $stats    = $this->resource->getStat();
-        $created  = new \DateTime('1997-12-01T18:27:21-08:00');
-        $modified = new \DateTime('Monday, 12-Jan-98 09:25:56 GMT');
-        $ctime    = $created->getTimestamp();
-        $atime    = $modified->getTimestamp();
-        $mode     = 0100777;
-        $bytes    = 4525;
+        $stats = $this->resource->getStat();
+        $created = new DateTime('1997-12-01T18:27:21-08:00');
+        $modified = new DateTime('Monday, 12-Jan-98 09:25:56 GMT');
+        $ctime = $created->getTimestamp();
+        $atime = $modified->getTimestamp();
+        $mode = 0100777;
+        $bytes = 4525;
 
         $this->assertEquals($mode, $stats[2], sprintf('Failed asserting that stat[2] equals to %o', $mode));
         $this->assertEquals($bytes, $stats[7], "Failed asserting that stat[7] equals to $bytes bytes");

@@ -10,7 +10,9 @@
 
 namespace Grale\WebDav\Exception;
 
-use Guzzle\Http\Exception\BadResponseException;
+use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Psr7\Request;
 
 /**
  *
@@ -78,33 +80,30 @@ abstract class HttpException extends \RuntimeException
     );
 
     /**
-     * @param BadResponseException $cause
-     *
+     * @param Request $request
+     * @param Response $response
      * @return self
      */
-    public static function factory(BadResponseException $cause)
+    public static function factory(Request $request, Response $response)
     {
-        $request  = $cause->getRequest();
-        $response = $cause->getResponse();
 
-        if ($response->isClientError()) {
+        if ($response->getStatusCode() >= 400 && $response->getStatusCode() < 500) {
             $class = __NAMESPACE__ . '\\ClientFailureException';
         } else {
-            $class = __NAMESPACE__ . '\\ServerFailureException';
+            $class = ServerFailureException::class;
         }
 
-        $exception = new $class($response->getReasonPhrase(), null, $cause);
+        $exception = new $class($response->getReasonPhrase(), null);
 
         if ($exception instanceof HttpException) {
             $statusCode = $response->getStatusCode();
-            $httpMethod = $request->getMethod();
 
             $exception->setStatusCode($statusCode);
-            $exception->setResponse($response);
-            $exception->setRequest($request);
+            $exception->setResponse($response->getReasonPhrase());
+            $exception->setRequest($request->getBody());
 
-            if (isset(self::$descriptionMapping[$httpMethod][$statusCode])) {
-                $exception->setDescription(self::$descriptionMapping[$httpMethod][$statusCode]);
+            if (isset(self::$descriptionMapping[$request->getMethod()][$statusCode])) {
+                $exception->setDescription(self::$descriptionMapping[$request->getMethod()][$statusCode]);
             }
         }
 

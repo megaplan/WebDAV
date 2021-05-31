@@ -10,8 +10,13 @@
 
 namespace Grale\WebDav;
 
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
 use Grale\WebDav\Header\DepthHeader;
 use Grale\WebDav\Header\TimeoutHeader;
+use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * A lock that applies to a WebDAV resource
@@ -62,24 +67,24 @@ class Lock
 
     /**
      * @param string $scope The locking mechanism to use ({@link Lock::EXCLUSIVE} or {@link Lock::SHARED} lock)
-     * @param string $type  The lock type (At present, write lock is the only supported type of locking)
+     * @param string $type The lock type (At present, write lock is the only supported type of locking)
      *
-     * @throws \InvalidArgumentException When the locking mechanism or lock type specified is not supported
+     * @throws InvalidArgumentException When the locking mechanism or lock type specified is not supported
      */
     public function __construct($scope = 'exclusive', $type = 'write')
     {
         if ($scope != Lock::EXCLUSIVE && $scope != Lock::SHARED) {
-            throw new \InvalidArgumentException('The locking mechanism specified is not supported');
+            throw new InvalidArgumentException('The locking mechanism specified is not supported');
         }
 
         if ($type != 'write') {
-            throw new \InvalidArgumentException('The lock type specified is not supported');
+            throw new InvalidArgumentException('The lock type specified is not supported');
         }
 
-        $this->type    = $type;
-        $this->scope   = $scope;
+        $this->type = $type;
+        $this->scope = $scope;
         $this->timeout = TimeoutHeader::getInfinite();
-        $this->depth   = 0;
+        $this->depth = 0;
     }
 
     /**
@@ -137,12 +142,12 @@ class Lock
      *
      * @param int $depth The depth of lock
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function setDepth($depth)
     {
         if ($depth != DepthHeader::INFINITY && $depth != 0) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Values other than 0 or infinity MUST NOT be used with the Depth header on a lock'
             );
         }
@@ -205,23 +210,23 @@ class Lock
     }
 
     /**
-     * @param \DOMElement $element
+     * @param DOMElement $element
      *
-     * @throws \InvalidArgumentException
      * @return self
      *
+     * @throws InvalidArgumentException
      * @todo define exception message
      */
-    public static function fromXml(\DOMElement $element)
+    public static function fromXml(DOMElement $element)
     {
-        $xpath = new \DOMXPath($element->ownerDocument);
+        $xpath = new DOMXPath($element->ownerDocument);
         $xpath->registerNamespace('D', 'DAV:');
 
-        $xLockType  = $xpath->query('D:locktype/*', $element);
+        $xLockType = $xpath->query('D:locktype/*', $element);
         $xLockScope = $xpath->query('D:lockscope/*', $element);
 
         if ($xLockType->length == 0 || $xLockScope->length == 0) {
-            throw new \InvalidArgumentException();
+            throw new InvalidArgumentException();
         }
 
         $result = new self(
@@ -256,9 +261,9 @@ class Lock
      * @param WebDavClient $client
      * @param string $xml
      *
-     * @throws \RuntimeException
      * @return self
      *
+     * @throws RuntimeException
      * @todo
      * - validate the XML document using a WebDAV DTD
      * - register namespaces automatically with the Xpath object
@@ -268,20 +273,20 @@ class Lock
     {
         $xml = preg_replace('/\s*[\r\n]\s*/', null, $xml);
 
-        $dom = new \DOMDocument();
+        $dom = new DOMDocument();
 
         $dom->formatOutput = false;
         $dom->preserveWhiteSpace = false;
 
-        $dom->loadXML($xml, LIBXML_NOWARNING|LIBXML_NOERROR);
+        $dom->loadXML($xml, LIBXML_NOWARNING | LIBXML_NOERROR);
 
         // XSD validation ? Namespaces ?
 
-        $xpath = new \DOMXPath($dom);
+        $xpath = new DOMXPath($dom);
         $xpath->registerNamespace('D', 'DAV:');
 
         if (!$dom->hasChildNodes()) {
-            throw new \RuntimeException();
+            throw new RuntimeException();
         }
 
         $lockInstance = null;

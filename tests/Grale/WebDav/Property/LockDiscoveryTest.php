@@ -10,19 +10,21 @@
 
 namespace Grale\WebDav\Property;
 
+use DOMDocument;
 use Grale\WebDav\Lock;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers Grale\WebDav\Property\LockDiscovery
  */
-class LockDiscoveryTest extends \PHPUnit_Framework_TestCase
+class LockDiscoveryTest extends TestCase
 {
     /**
      * @var LockDiscovery
      */
     protected $property;
 
-    public function setUp()
+    public function setUp(): void
     {
         $lockOne = new Lock('shared');
         $lockOne->setToken('opaquelocktoken:e71df4fae-5dec-22d6-fea5-00a0c91e6be4');
@@ -91,7 +93,7 @@ class LockDiscoveryTest extends \PHPUnit_Framework_TestCase
 
     public function testFromXmlWitoutAnyActiveLock()
     {
-        $dom = new \DOMDocument();
+        $dom = new DOMDocument();
         $dom->loadXML(
             '<?xml version="1.0" encoding="utf-8"?>
             <D:multistatus xmlns:D="DAV:">
@@ -105,7 +107,7 @@ class LockDiscoveryTest extends \PHPUnit_Framework_TestCase
 
     public function testFromXml()
     {
-        $dom = new \DOMDocument();
+        $dom = new DOMDocument();
         $dom->loadXML(
             '<?xml version="1.0" encoding="utf-8"?>
             <D:multistatus xmlns:D="DAV:">

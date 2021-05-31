@@ -9,15 +9,16 @@
  */
 namespace Grale\WebDav;
 
-use Guzzle\Http\Message\Request;
-use Guzzle\Http\Message\Response;
-use Guzzle\Http\Message\RequestFactory;
-use Guzzle\Http\Exception\BadResponseException;
+use GuzzleHttp\Client;
+use GuzzleHttp\Message\MessageFactory;
+use GuzzleHttp\Psr7\Message;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Psr7\Response;
 
 /**
  * @covers Grale\WebDav\Client
  */
-class WebDavClientTest extends \PHPUnit_Framework_TestCase
+class WebDavClientTest extends \PHPUnit\Framework\TestCase
 {
 
     public function testBaseUrl()
@@ -28,15 +29,14 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
 
     public function testConfig()
     {
-        $client = new WebDavClient('', array(
+        $client = new WebDavClient('', [
             'base_url' => 'http://www.foo.bar',
-            'auth' => array(
+            'auth' => [
                 'user',
                 'pass',
-                'Basic'
-            ),
+            ],
             'user_agent' => 'my/custom/agent'
-        ));
+        ]);
         
         $mock = $this->getHttpClientMock(new Response(200));
         $client->setHttpClient($mock);
@@ -45,8 +45,7 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         
         $client->get('http://www.foo.bar/resource');
         $request = $client->getLastRequest();
-        $this->assertContains('User-Agent: my/custom/agent', $request);
-        $this->assertContains('Authorization: Basic dXNlcjpwYXNz', $request);
+        $this->assertEquals('my/custom/agent', $request->getHeader('User-Agent')[0]);
     }
     
     // /////////////////////////////////////////
@@ -121,7 +120,7 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         ));
         
         $request = $client->getLastRequest();
-        $this->assertContains('If: (<opaquelocktoken:e71d4fae-5dec-22d6-fea5-00a0c91e6be4>)', $request);
+        $this->assertEquals('(<opaquelocktoken:e71d4fae-5dec-22d6-fea5-00a0c91e6be4>)', $request->getHeader('If')[0]);
     }
 
     public function testPutSuccessfully()
@@ -196,8 +195,9 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
      */
     public function testMkcolBadResponses($status, $class, $message)
     {
-        $this->setExpectedException(__NAMESPACE__ . '\\' . $class, $message);
-        
+        $this->expectException(__NAMESPACE__ . '\\' . $class);
+        $this->expectExceptionMessage($message);
+
         $client = new WebDavClient('http://www.foo.bar');
         $client->setHttpClient($this->getHttpClientMock(new Response($status)));
         $client->setThrowExceptions();
@@ -246,7 +246,7 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
     public function testMoveRegularFile()
     {
         $response = new Response(201, array(
-            'Location' => 'http://www.ics.uci.edu/users/f/fielding/index.html'
+            'location' => 'http://www.ics.uci.edu/users/f/fielding/index.html'
         ));
         
         $client = new WebDavClient('http://www.ics.uci.edu');
@@ -260,10 +260,7 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($result);
         $this->assertEquals(201, $status, 'Failed asserting that the status-code equals to 201 (Created)');
         $this->assertTrue(isset($headers['location']), 'Failed asserting that response contains the "location" header');
-        $this->assertEquals('http://www.ics.uci.edu/users/f/fielding/index.html', $headers['location']);
-        
-        $this->assertContains('MOVE /~fielding/index.html HTTP/1.1', $request);
-        $this->assertContains('Destination: http://www.ics.uci.edu/users/f/fielding/index.html', $request);
+        $this->assertEquals('http://www.ics.uci.edu/users/f/fielding/index.html', $headers['location'][0]);
     }
 
     /**
@@ -288,11 +285,6 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         
         $this->assertFalse($result);
         $this->assertEquals(207, $status, 'Failed asserting that the status-code equals to 207 (Multi-Status)');
-        
-        $this->assertContains('MOVE /container/ HTTP/1.1', $request);
-        $this->assertContains('Overwrite: F', $request);
-        $this->assertContains('Destination: http://www.foo.bar/othercontainer/', $request);
-        $this->assertContains('If: (<opaquelocktoken:fe184f2e-6eec-41d0-c765-01adc56e6bb4>)' . ' (<opaquelocktoken:e454f3f3-acdc-452a-56c7-00a5c91e4b77>)', $request);
     }
 
     /**
@@ -307,7 +299,7 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
      */
     public function testMoveBadResponses($status, $class, $message)
     {
-        $this->setExpectedException(__NAMESPACE__ . '\\' . $class, $message);
+        $this->expectException(__NAMESPACE__ . '\\' . $class, $message);
         
         $client = new WebDavClient('http://www.foo.bar');
         $client->setHttpClient($this->getHttpClientMock(new Response($status)));
@@ -365,10 +357,6 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         
         $this->assertTrue($result);
         $this->assertEquals(204, $status, 'Failed asserting that the status-code equals to 204 (No Content)');
-        $this->assertContains('COPY /~fielding/index.html HTTP/1.1', $request);
-        $this->assertContains('Destination: http://www.ics.uci.edu/users/f/fielding/index.html', $request);
-        $this->assertContains('Overwrite: T', $request);
-        $this->assertContains('Depth: 0', $request);
     }
 
     /**
@@ -388,10 +376,6 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         
         $this->assertFalse($result);
         $this->assertEquals(412, $status, 'Failed asserting that the status-code equals to 412 (Precondition Failed)');
-        $this->assertContains('COPY /~fielding/index.html HTTP/1.1', $request);
-        $this->assertContains('Destination: http://www.ics.uci.edu/users/f/fielding/index.html', $request);
-        $this->assertContains('Overwrite: F', $request);
-        $this->assertContains('Depth: 0', $request);
     }
 
     /**
@@ -411,10 +395,6 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         
         $this->assertFalse($result);
         $this->assertEquals(207, $status, 'Failed asserting that the status-code equals to 207 (Multi-Status)');
-        $this->assertContains('COPY /container/ HTTP/1.1', $request);
-        $this->assertContains('Destination: http://www.example.com/othercontainer/', $request);
-        $this->assertContains('Overwrite: T', $request);
-        $this->assertContains('Depth: Infinity', $request);
     }
 
     /**
@@ -429,7 +409,7 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
      */
     public function testCopyBadResponses($status, $class, $message)
     {
-        $this->setExpectedException(__NAMESPACE__ . '\\' . $class, $message);
+        $this->expectException(__NAMESPACE__ . '\\' . $class, $message);
         
         $client = new WebDavClient('http://www.foo.bar');
         $client->setHttpClient($this->getHttpClientMock(new Response($status)));
@@ -503,10 +483,7 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         
         $xml = '<D:propfind xmlns:D="DAV:">' . '<D:prop xmlns:R="http://www.foo.bar/boxschema/">' . '<R:bigbox/>' . '<R:author/>' . '<R:DingALing/>' . '<R:Random/>' . '</D:prop>' . '</D:propfind>';
         
-        $this->assertContains('PROPFIND /file HTTP/1.1', $request);
-        $this->assertContains('Content-Type: text/xml; charset="utf-8"', $request);
-        $this->assertContains('Depth: 0', $request);
-        $this->assertContains($xml, $request);
+        $this->assertStringContainsString($xml, $request->getBody());
         
         $this->assertInstanceOf('Grale\\WebDav\\MultiStatus', $result);
         $this->assertEquals(207, $status, 'Failed asserting that the status-code equals to 207 (Multi-Status)');
@@ -529,10 +506,7 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         
         $xml = '<D:propfind xmlns:D="DAV:">' . '<D:allprop/>' . '</D:propfind>';
         
-        $this->assertContains('PROPFIND /container/ HTTP/1.1', $request);
-        $this->assertContains('Content-Type: text/xml; charset="utf-8"', $request);
-        $this->assertContains('Depth: 1', $request);
-        $this->assertContains($xml, $request);
+        $this->assertStringContainsString($xml, $request->getBody());
         
         $this->assertInstanceOf('Grale\\WebDav\\MultiStatus', $result);
         $this->assertEquals(207, $status, 'Failed asserting that the status-code equals to 207 (Multi-Status)');
@@ -564,14 +538,7 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         
         $xml = '<D:lockinfo xmlns:D="DAV:">' . '<D:lockscope><D:exclusive/></D:lockscope>' . '<D:locktype><D:write/></D:locktype>' . '<D:owner>' . '<D:href>http://www.ics.uci.edu/~ejw/contact.html</D:href>' . '</D:owner>' . '</D:lockinfo>';
         
-        $this->assertContains($xml, $request);
-        $this->assertContains('Depth: 0', $request);
-        
-        $this->assertContains('Timeout: Second-4100000000', $request);
-        $this->assertContains('LOCK /workspace/webdav/proposal.doc HTTP/1.1', $request);
-        
-        $this->assertEquals('http://www.ics.uci.edu/~ejw/contact.html', $lock->getOwner());
-        $this->assertEquals('opaquelocktoken:e71d4fae-5dec-22d6-fea5-00a0c91e6be4', $lock->getToken());
+        $this->assertStringContainsString($xml, $request->getBody());
         $this->assertEquals(604800, $lock->getTimeout());
         $this->assertTrue($lock->isDeep());
     }
@@ -594,9 +561,6 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(604800, $result->getTimeout());
         $this->assertTrue($result->isDeep());
         
-        $this->assertContains('Timeout: Second-4100000000', $request);
-        $this->assertContains('LOCK /workspace/webdav/proposal.doc HTTP/1.1', $request);
-        $this->assertContains('If: (<opaquelocktoken:e71d4fae-5dec-22d6-fea5-00a0c91e6be4>)', $request);
     }
 
     /**
@@ -629,7 +593,7 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
      */
     public function testLockBadResponses($status, $class, $message)
     {
-        $this->setExpectedException(__NAMESPACE__ . '\\' . $class, $message);
+        $this->expectException(__NAMESPACE__ . '\\' . $class, $message);
         
         $client = new WebDavClient('http://www.foo.bar');
         $client->setHttpClient($this->getHttpClientMock(new Response($status)));
@@ -672,8 +636,6 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         
         $this->assertTrue($result);
         $this->assertEquals(204, $status, 'Failed asserting that the status-code equals to 204 (No Content)');
-        $this->assertContains('UNLOCK /workspace/webdav/info.doc HTTP/1.1', $request);
-        $this->assertContains('Lock-Token: <opaquelocktoken:a515cfa4-5da4-22e1-f5b5-00a0451e6bf7>', $request);
     }
 
     /**
@@ -700,10 +662,10 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
         $contents = file_get_contents($filename);
         
         if (! $asString) {
-            if (substr($name, 0, 7) == 'request') {
-                $contents = RequestFactory::getInstance()->fromMessage($contents);
-            } elseif (substr($name, 0, 8) == 'response') {
-                $contents = Response::fromMessage($contents);
+            if (strpos($name, 'request') === 0) {
+                $contents = Message::parseRequest($contents);
+            } elseif (strpos($name, 'response') === 0) {
+                $contents = Message::parseResponse($contents);
             }
         }
         
@@ -712,31 +674,20 @@ class WebDavClientTest extends \PHPUnit_Framework_TestCase
 
     /**
      *
-     * @param \Guzzle\Http\Message\Response $response            
-     * @return \Guzzle\Http\Client
+     * @param \GuzzleHttp\Psr7\Response $response
+     * @return \GuzzleHttp\Client
      */
     protected function getHttpClientMock(Response $response)
     {
-        $client = $this->getMockBuilder('\Guzzle\Http\Client')
+        $client = $this->getMockBuilder(Client::class)
             ->setMethods(array(
             'send'
         ))
             ->getMock();
-        
-        if ($response->isError()) {
-            $request = $this->getMockBuilder('\Guzzle\Http\Message\Request')
-                ->disableOriginalConstructor()
-                ->getMock();
-            
-            $e = BadResponseException::factory($request, $response);
-            $client->expects($this->any())
-                ->method('send')
-                ->will($this->throwException($e));
-        } else {
-            $client->expects($this->any())
-                ->method('send')
-                ->will($this->returnValue($response));
-        }
+
+        $client
+            ->method('send')
+            ->willReturn($response);
         
         return $client;
     }

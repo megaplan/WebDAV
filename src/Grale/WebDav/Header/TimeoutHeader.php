@@ -7,6 +7,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace Grale\WebDav\Header;
 
 use Grale\WebDav\Header\TimeoutValue\TimeoutValueFactory;
@@ -23,7 +24,7 @@ class TimeoutHeader
     /**
      * Infinite timeout
      */
-    const INFINITE = - 1;
+    const INFINITE = -1;
 
     /**
      *
@@ -46,7 +47,7 @@ class TimeoutHeader
     {
         $value = TimeoutValueFactory::createFromValue($timeout);
         $this->value = $value;
-        $this->seconds = (string) $timeout;
+        $this->seconds = (string)$timeout;
     }
 
     /**
@@ -64,7 +65,7 @@ class TimeoutHeader
      *
      * @param int $time
      *            Timestamp when the validity date must be calculated from (Defaults to current timestamp)
-     *            
+     *
      * @return int Returns the validity date as a UNIX timestamp
      */
     public function getValidity($time = null)
@@ -74,7 +75,7 @@ class TimeoutHeader
             $time = time();
         }
         // @codeCoverageIgnoreEnd
-        
+
         return $this->seconds >= 0 ? $this->value->getValidity($time) : self::INFINITE;
     }
 
@@ -89,13 +90,13 @@ class TimeoutHeader
     public function __toString()
     {
         $header = null;
-        
-        if (! $this->value->isInfinite()) {
+
+        if (!$this->value->isInfinite()) {
             $header = sprintf('Second-%s', $this->value->__toString());
         } else {
             $header = 'Infinite';
         }
-        
+
         return $header;
     }
 
@@ -119,7 +120,7 @@ class TimeoutHeader
     public static function parse($str)
     {
         $header = null;
-        
+
         if (strtolower($str) == 'infinite') {
             $header = self::getInfinite();
         } elseif (strtolower(substr($str, 0, 7)) == 'second-' && ctype_digit(substr($str, 7))) {
@@ -127,7 +128,7 @@ class TimeoutHeader
         } elseif (is_numeric($str)) {
             $header = new static($str);
         }
-        
+
         return $header;
     }
 }

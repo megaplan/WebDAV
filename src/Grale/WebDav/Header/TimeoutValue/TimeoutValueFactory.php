@@ -1,4 +1,5 @@
 <?php
+
 namespace Grale\WebDav\Header\TimeoutValue;
 
 use Grale\WebDav\Exception\RuntimeException;
@@ -6,7 +7,7 @@ use Grale\WebDav\Exception\RuntimeException;
 /**
  *
  * @author samizdam
- *        
+ *
  */
 class TimeoutValueFactory
 {
@@ -15,7 +16,7 @@ class TimeoutValueFactory
 
     /**
      *
-     * @param TimeoutValueInterface $timeout            
+     * @param TimeoutValueInterface $timeout
      */
     public static function createFromValue($timeout)
     {

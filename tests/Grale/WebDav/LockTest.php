@@ -10,20 +10,23 @@
 
 namespace Grale\WebDav;
 
-use Grale\WebDav\Header\TimeoutHeader;
+use DOMDocument;
 use Grale\WebDav\Header\DepthHeader;
+use Grale\WebDav\Header\TimeoutHeader;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 
 /**
  * @covers Grale\WebDav\Lock
  */
-class LockTest extends \PHPUnit_Framework_TestCase
+class LockTest extends TestCase
 {
     /**
      * @var Lock
      */
     protected $lock;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->lock = new Lock();
     }
@@ -59,7 +62,7 @@ class LockTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Values other than 0 or infinity MUST NOT be used with the Depth header on a lock
      */
     public function testInvalidDepth()
@@ -92,7 +95,7 @@ class LockTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage The lock type specified is not supported
      */
     public function testInvalidLockType()
@@ -101,7 +104,7 @@ class LockTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage The locking mechanism specified is not supported
      */
     public function testInvalidLockScope()
@@ -110,19 +113,19 @@ class LockTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage
      */
     public function testFromInvalidXml()
     {
-        $dom = new \DOMDocument();
+        $dom = new DOMDocument();
         $dom->loadXML('<?xml version="1.0" encoding="utf-8"?><html></html>');
         Lock::fromXml($dom->documentElement);
     }
 
     public function testFromActiveLockXml()
     {
-        $dom = new \DOMDocument();
+        $dom = new DOMDocument();
         $dom->loadXML(
             '<?xml version="1.0" encoding="utf-8"?>
             <D:activelock xmlns:D="DAV:">
@@ -153,7 +156,7 @@ class LockTest extends \PHPUnit_Framework_TestCase
 
     public function testFromLockInfoXml()
     {
-        $dom = new \DOMDocument();
+        $dom = new DOMDocument();
         $dom->loadXML(
             '<?xml version="1.0" encoding="utf-8"?>
             <D:lockinfo xmlns:D="DAV:">

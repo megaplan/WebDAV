@@ -65,8 +65,8 @@ class LockDiscovery extends AbstractProperty implements LockableInterface
             $this->tokens[$lock->getToken()] = $index;
         }
 
-        $type    = $lock->getType();
-        $scope   = $lock->getScope();
+        $type = $lock->getType();
+        $scope = $lock->getScope();
         $hashKey = $this->getHashKey($type, $scope);
 
         if (!isset($this->index[$type])) {
@@ -85,7 +85,7 @@ class LockDiscovery extends AbstractProperty implements LockableInterface
     /**
      * Computes a hash key for the given lock type and lock scope
      *
-     * @param string $type  The lock type
+     * @param string $type The lock type
      * @param string $scope The lock scope
      *
      * @return string The hash key for the index table
@@ -124,7 +124,7 @@ class LockDiscovery extends AbstractProperty implements LockableInterface
      */
     public function getLocks($type = null, $scope = null)
     {
-        $result  = array();
+        $result = array();
         $hashKey = $this->getHashKey($type, $scope);
 
         if ($hashKey && isset($this->index[$hashKey])) {

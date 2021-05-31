@@ -1,10 +1,11 @@
 <?php
+
 namespace Grale\WebDav\Header\TimeoutValue;
 
 /**
  *
  * @author samizdam
- *        
+ *
  */
 class NativeIntValue implements TimeoutValueInterface
 {
@@ -17,29 +18,29 @@ class NativeIntValue implements TimeoutValueInterface
 
     public function __construct($value)
     {
-        $this->value = (int) $value;
+        $this->value = (int)$value;
     }
 
     /**
      *
      * (non-PHPdoc)
      *
+     * @return string
      * @see \Grale\WebDav\Header\TimeoutValue\TimeoutValueInterface::__toString()
      *
-     * @return string
      */
     public function __toString()
     {
-        return (string) $this->value;
+        return (string)$this->value;
     }
 
     /**
      *
      * (non-PHPdoc)
      *
+     * @return boolean
      * @see \Grale\WebDav\Header\TimeoutValue\TimeoutValueInterface::isInfinite()
      *
-     * @return boolean
      */
     public function isInfinite()
     {
@@ -50,10 +51,10 @@ class NativeIntValue implements TimeoutValueInterface
      *
      * (non-PHPdoc)
      *
+     * @param unknown $time
+     * @return number
      * @see \Grale\WebDav\Header\TimeoutValue\TimeoutValueInterface::getValidity()
      *
-     * @param unknown $time            
-     * @return number
      */
     public function getValidity($time)
     {

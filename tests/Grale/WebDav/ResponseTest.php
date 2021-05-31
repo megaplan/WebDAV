@@ -16,7 +16,7 @@ use Grale\WebDav\Property\ResourceType;
 /**
  * @covers Grale\WebDav\Response
  */
-class ResponseTest extends \PHPUnit_Framework_TestCase
+class ResponseTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @expectedException \InvalidArgumentException

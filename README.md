@@ -1,7 +1,8 @@
-WebDAV
+WebDAV [PHP8 compatible]
 ======
 
-A simple PHP WebDAV client and stream wrapper. 
+A simple PHP WebDAV client and stream wrapper
+
 
 ## Timeout Value Big Int Support
 

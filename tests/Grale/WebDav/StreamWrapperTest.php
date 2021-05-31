@@ -10,42 +10,47 @@
 
 namespace Grale\WebDav;
 
-use Guzzle\Http\EntityBody;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Stream;
 
 /**
  * @covers Grale\WebDav\StreamWrapper
  */
-class StreamWrapperTest extends \PHPUnit_Framework_TestCase
+class StreamWrapperTest extends \PHPUnit\Framework\TestCase
 {
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
+     * @var \PHPUnit\Framework\MockObject\MockObject
      */
     protected $client;
 
-    public function setUp()
+    public function setUp(): void
     {
-        $httpClient = $this->getMockBuilder('\Guzzle\Http\Client')->getMock();
-        $wdavClient = $this->getMockBuilder('\Grale\WebDav\WebDavClient')->getMock();
+        $httpClient = $this->createMock(Client::class);
+        $wdavClient = $this->createMock(WebDavClient::class);
 
-        $wdavClient->expects($this->any())->method('getHttpClient')->will($this->returnValue($httpClient));
+        $wdavClient->method('getHttpClient')->willReturn($httpClient);
 
-        $stream = EntityBody::fromString('Hello World!');
-        $wdavClient->expects($this->any())->method('getStream')->will($this->returnValue($stream));
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, 'Hello World!');
+        rewind($stream);
+
+        $stream = new Stream($stream);
+        $wdavClient->method('getStream')->willReturn($stream);
 
         $propfind = MultiStatus::parse(
             $wdavClient,
             file_get_contents(__DIR__ . '/../../fixtures/streamwrapper.opendir.xml')
         );
 
-        $wdavClient->expects($this->any())->method('setThrowExceptions')->will($this->returnValue($this->client));
-        $wdavClient->expects($this->any())->method('propfind')->will($this->returnValue($propfind));
+        $wdavClient->method('setThrowExceptions')->willReturn($this->client);
+        $wdavClient->method('propfind')->willReturn($propfind);
 
         $this->client = $wdavClient;
 
         StreamWrapper::register(null, $this->client);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         foreach (array('webdav', 'webdavs') as $wrapper) {
             if (in_array($wrapper, stream_get_wrappers())) {
@@ -88,11 +93,13 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider getUnsupportedModes
-     * @expectedException \PHPUnit_Framework_Error_Warning
-     * @expectedExceptionMessage failed to open stream
+     *
+     *
      */
     public function testStreamOpenWithUnsupportedModeTriggersError($mode)
     {
+        $this->expectException(\PHPUnit\Framework\Error\Warning::class);
+        $this->expectExceptionMessage("ailed to open stream");
         fopen('webdav://test', $mode);
     }
 
@@ -112,7 +119,7 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase
         $dir = 'webdav://www.foo.bar/container';
 
         $dh = opendir($dir);
-        $this->assertInternalType('resource', $dh, "Failed asserting that 'opendir' returned a 'resource'");
+        $this->assertIsResource($dh, "Failed asserting that 'opendir' returned a 'resource'");
 
         $files = array();
 
@@ -171,11 +178,12 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase
         $stream = fopen('webdav://www.foo.bar', 'w');
         fwrite($stream, 'Hello World!');
         fclose($stream);
+        $this->assertTrue(true);
     }
 
     public function testReadingWithWriteOnlyMode()
     {
-        $stream = fopen('webdav://www.foo.bar', 'w');
+        $stream = fopen('webdav://www.foo.bar', 'wb');
         $data = fread($stream, 1024);
         $this->assertEmpty($data);
     }
@@ -184,7 +192,7 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase
     {
         $this->client->expects($this->once())
                      ->method('delete')
-                     ->will($this->returnValue(true));
+                     ->willReturn(true);
 
         $result = unlink('webdav://www.foo.bar/front.html');
         $this->assertTrue($result);
@@ -210,12 +218,10 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($result);
     }
 
-    /**
-     * @expectedException \PHPUnit_Framework_Error_Warning
-     * @expectedExceptionMessage WebDAV stream wrapper does not allow to create directories recursively
-     */
     public function testMakeDirectoryRecursively()
     {
+        $this->expectExceptionMessage("WebDAV stream wrapper does not allow to create directories recursively");
+        $this->expectException(\PHPUnit\Framework\Error\Warning::class);
         $result = mkdir('webdav://www.foo.bar/newcontainer', 0777, true);
         $this->assertFalse($result);
     }
@@ -224,7 +230,7 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase
     {
         $this->client->expects($this->once())
                      ->method('delete')
-                     ->will($this->returnValue(true));
+                     ->willReturn(true);
 
         $result = rmdir('webdav://www.foo.bar/newcontainer');
         $this->assertTrue($result);
@@ -241,7 +247,7 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase
                          $this->equalTo('http://www.foo.bar/front.html'),
                          $this->anything()
                      )
-                     ->will($this->returnValue($lock));
+                     ->willReturn($lock);
 
         $stream = fopen('webdav://www.foo.bar/front.html', 'w');
         $result = flock($stream, LOCK_EX);
@@ -260,7 +266,7 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase
                          $this->equalTo('http://www.foo.bar/front.html'),
                          $this->anything()
                      )
-                     ->will($this->returnValue($lock));
+                     ->willReturn($lock);
 
         $stream = fopen('webdav://www.foo.bar/front.html', 'w');
         $result = flock($stream, LOCK_SH);
@@ -275,7 +281,7 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase
         $lock = new Lock(Lock::EXCLUSIVE);
         $lock->setToken('opaquelocktoken:e71d4fae-5dec-22d6-fea5-00a0c91e6be4');
 
-        $this->client->expects($this->once())->method('createLock')->will($this->returnValue($lock));
+        $this->client->expects($this->once())->method('createLock')->willReturn($lock);
 
         $this->client->expects($this->once())
                      ->method('refreshLock')
@@ -284,7 +290,7 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase
                          $this->equalTo($lock->getToken()),
                          $this->anything()
                      )
-                     ->will($this->returnValue($lock));
+                     ->willReturn($lock);
 
         flock($fd, LOCK_EX);
         $result = flock($fd, LOCK_EX);
@@ -297,7 +303,7 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase
         $lock = new Lock();
         $lock->setToken('opaquelocktoken:e71d4fae-5dec-22d6-fea5-00a0c91e6be4');
 
-        $this->client->expects($this->once())->method('createLock')->will($this->returnValue($lock));
+        $this->client->expects($this->once())->method('createLock')->willReturn($lock);
 
         $fd = fopen('webdav://www.foo.bar/front.html', 'w');
         flock($fd, LOCK_EX);
@@ -308,7 +314,7 @@ class StreamWrapperTest extends \PHPUnit_Framework_TestCase
                          $this->equalTo('http://www.foo.bar/front.html'),
                          $this->equalTo($lock->getToken())
                      )
-                     ->will($this->returnValue(true));
+                     ->willReturn(true);
 
         $result = flock($fd, LOCK_UN);
 

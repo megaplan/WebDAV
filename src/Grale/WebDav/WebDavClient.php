@@ -9,13 +9,13 @@
  */
 namespace Grale\WebDav;
 
-use Guzzle\Http\Url;
-use Guzzle\Http\EntityBody;
-use Guzzle\Http\Client as HttpClient;
-use Guzzle\Http\Message\Response as HttpResponse;
-use Guzzle\Http\Message\RequestInterface as HttpRequest;
-use Guzzle\Http\Exception\BadResponseException;
-use Guzzle\Stream\PhpStreamRequestFactory;
+use GuzzleHttp\Psr7\Uri as Url;
+use GuzzleHttp\Psr7\Stream;
+use GuzzleHttp\Client as HttpClient;
+use GuzzleHttp\Psr7\Response as HttpResponse;
+use GuzzleHttp\Psr7\Request as HttpRequest;
+use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Stream\PhpStreamRequestFactory;
 use Grale\WebDav\Exception\NoSuchResourceException;
 use Grale\WebDav\Exception\HttpException;
 use Grale\WebDav\Header\TimeoutHeader;
@@ -98,8 +98,13 @@ class WebDavClient
      *
      * @var array
      */
-    public $propertyMap = array();
-
+    public $propertyMap = array(
+        'resourcetype' => Property\ResourceType::class,
+        'creationdate' => Property\DateTimeProperty::class,
+        'getlastmodified' => Property\DateTimeProperty::class,
+        'lockdiscovery' => Property\LockDiscovery::class,
+        'supportedlock' => Property\SupportedLock::class
+    );
     /**
      *
      * @param string $baseUrl
@@ -110,14 +115,6 @@ class WebDavClient
      */
     public function __construct($baseUrl = '', array $config = null)
     {
-        $this->propertyMap = array(
-            'resourcetype' => __NAMESPACE__ . '\\Property\\ResourceType',
-            'creationdate' => __NAMESPACE__ . '\\Property\\DateTimeProperty',
-            'getlastmodified' => __NAMESPACE__ . '\\Property\\DateTimeProperty',
-            'lockdiscovery' => __NAMESPACE__ . '\\Property\\LockDiscovery',
-            'supportedlock' => __NAMESPACE__ . '\\Property\\SupportedLock'
-        );
-        
         $this->setBaseUrl($baseUrl);
         $this->userAgent = $this->getDefaultUserAgent();
         $this->requestOptions = array();
@@ -136,10 +133,9 @@ class WebDavClient
      */
     public function get($uri)
     {
-        $request = $this->createRequest('GET', $uri);
-        $response = $this->doRequest($request);
-        
-        return $response->isSuccessful() ? $response->getBody(true) : null;
+        $response = $this->createRequest('GET', $uri);
+
+        return $this->isSuccessful($response) ? $response->getBody(true) : null;
     }
 
     /**
@@ -148,28 +144,22 @@ class WebDavClient
      * @param string $uri
      *            Resource URI
      *            
-     * @return EntityBody Returns the stream resource on success or false on failure
+     * @return Stream Returns the stream resource on success or false on failure
      * @throws \RuntimeException If the stream cannot be opened or an error occurs
      */
     public function getStream($uri)
     {
-        $request = $this->createRequest('GET', $uri);
-        
-        $factory = new PhpStreamRequestFactory();
-        $stream = $factory->fromRequest($request, array(), array(
-            'stream_class' => 'Guzzle\Http\EntityBody'
-        ));
-        
-        // The implementation of streaming download proposed by Guzzle's EntityBody class does not care about
+        $response = $this->createRequest('GET', $uri);
+
+
+        // The implementation of streaming download proposed by Guzzle's Stream class does not care about
         // HTTP errors. As a workaround, let's rebuild the HTTP response from the response headers sent in the
         // $http_response_header variable (http://www.php.net/manual/en/reserved.variables.httpresponseheader.php)
-        $response = HttpResponse::fromMessage(implode("\r\n", $factory->getLastResponseHeaders()));
-        
+
         // Creates History
-        $this->lastRequest = $request;
         $this->lastResponse = $response;
         
-        if (! $response->isSuccessful()) {
+        if (! $this->isSuccessful($response)) {
             $stream = false;
         }
         
@@ -194,9 +184,8 @@ class WebDavClient
      */
     public function exists($uri)
     {
-        $request = $this->createRequest('HEAD', $uri);
-        $response = $this->doRequest($request);
-        
+        $response = $this->createRequest('HEAD', $uri);
+
         return $response->getStatusCode() == 200;
     }
 
@@ -221,15 +210,12 @@ class WebDavClient
      */
     public function put($uri, $body = null, array $options = null)
     {
-        $headers = isset($options['headers']) ? $options['headers'] : array();
-        $request = $this->createRequest('PUT', $uri, $headers, $body);
-        
+        $headers = $options['headers'] ?? array();
         if (isset($options['locktoken'])) {
-            $request->setHeader('If', '(<' . $options['locktoken'] . '>)');
+            $headers['If'] = '(<' . $options['locktoken'] . '>)';
         }
-        
-        $response = $this->doRequest($request);
-        
+        $response = $this->createRequest('PUT', $uri, $headers, $body);
+
         // 201 (Created) is the default success code
         return $response->getStatusCode() == 201;
     }
@@ -253,15 +239,12 @@ class WebDavClient
      */
     public function delete($uri, array $options = null)
     {
-        $headers = isset($options['headers']) ? $options['headers'] : array();
-        $request = $this->createRequest('DELETE', $uri, $headers);
-        
+        $headers = $options['headers'] ?? array();
         if (isset($options['locktoken'])) {
-            $request->setHeader('If', '(<' . $options['locktoken'] . '>)');
+            $headers['If'] = '(<' . $options['locktoken'] . '>)';
         }
-        
-        $response = $this->doRequest($request);
-        
+        $response = $this->createRequest('DELETE', $uri, $headers);
+
         // 204 (No Content) is the default success code
         return $response->getStatusCode() == 204;
     }
@@ -285,15 +268,13 @@ class WebDavClient
      */
     public function mkcol($uri, array $options = null)
     {
-        $headers = isset($options['headers']) ? $options['headers'] : array();
-        $request = $this->createRequest('MKCOL', $uri, $headers);
-        
+        $headers = $options['headers'] ?? array();
         if (isset($options['locktoken'])) {
-            $request->setHeader('If', '(<' . $options['locktoken'] . '>)');
+            $headers['If'] = '(<' . $options['locktoken'] . '>)';
         }
-        
-        $response = $this->doRequest($request);
-        
+
+        $response = $this->createRequest('MKCOL', $uri, $headers);
+
         // 201 (Created) is the default success code
         return $response->getStatusCode() == 201;
     }
@@ -322,27 +303,24 @@ class WebDavClient
     {
         $recursive = isset($options['recursive']) ? (bool) $options['recursive'] : false;
         $overwrite = isset($options['overwrite']) ? (bool) $options['overwrite'] : true;
-        
-        $request = $this->createRequest('MOVE', $uri, array(
+        $headers = [
             'Destination' => $this->resolveUrl($destination),
             'Overwrite' => $overwrite ? 'T' : 'F',
             'Depth' => $recursive ? 'Infinity' : '0'
-        ));
-        
+        ];
         if (isset($options['locktoken'])) {
             $tokens = is_array($options['locktoken']) ? $options['locktoken'] : array(
                 $options['locktoken']
             );
-            
+
             foreach ($tokens as &$token) {
                 $token = "(<{$token}>)";
             }
-            
-            $request->setHeader('If', implode(' ', $tokens));
+
+            $headers['If'] = implode(' ', $tokens);
         }
-        
-        $response = $this->doRequest($request);
-        
+        $response = $this->createRequest('MOVE', $uri, $headers);
+
         // Note that if an error occurs with a resource other than the resource
         // identified in the Request-URI then the response must be a 207 (Multi-Status)
         return $response->getStatusCode() == 201 || $response->getStatusCode() == 204;
@@ -373,14 +351,12 @@ class WebDavClient
     {
         $recursive = isset($options['recursive']) ? (bool) $options['recursive'] : false;
         $overwrite = isset($options['overwrite']) ? (bool) $options['overwrite'] : true;
-        
-        $request = $this->createRequest('COPY', $uri, array(
+
+        $response = $this->createRequest('COPY', $uri, array(
             'Destination' => $this->resolveUrl($destination),
             'Overwrite' => $overwrite ? 'T' : 'F',
             'Depth' => $recursive ? 'Infinity' : '0'
         ));
-        
-        $response = $this->doRequest($request);
         
         // Note that if an error in executing the COPY method occurs with a resource other
         // than the resource identified in the Request-URI, then the response must be a 207 (Multi-Status)
@@ -434,14 +410,13 @@ class WebDavClient
         
         $dom->appendChild($xPropfind)->appendChild($xProp);
         $body = $dom->saveXML();
-        
-        $request = $this->createRequest('PROPFIND', $uri, array(
+
+        $response = $this->createRequest('PROPFIND', $uri, array(
             'Content-Type' => 'Content-Type: text/xml; charset="utf-8"',
             'Depth' => $depth
         ), $body);
         
-        $response = $this->doRequest($request);
-        
+
         return $response->getStatusCode() == 207 ? MultiStatus::parse($this, $response->getBody()) : null;
     }
 
@@ -501,10 +476,9 @@ class WebDavClient
         if (isset($options['timeout'])) {
             $headers['Timeout'] = (string) TimeoutHeader::parse($options['timeout']);
         }
-        
-        $request = $this->createRequest('LOCK', $uri, $headers, $body);
-        $response = $this->doRequest($request);
-        
+
+        $response = $this->createRequest('LOCK', $uri, $headers, $body);
+
         // When the LOCK request succeeds, the lockdiscovery property is included in the response body.
         // However note that multi-resource lock requests are not supported, so that 207 (Multi-Status)
         // responses are not supposed to be returned
@@ -513,7 +487,7 @@ class WebDavClient
             throw new \RuntimeException('Unexpected server response');
         }
         
-        return $response->isSuccessful() ? Lock::parse($this, $response->getBody()) : null;
+        return $this->isSuccessful($response) ? Lock::parse($this, $response->getBody()) : null;
     }
 
     /**
@@ -543,11 +517,10 @@ class WebDavClient
         if ($timeout) {
             $headers['Timeout'] = (string) TimeoutHeader::parse($timeout);
         }
-        
-        $request = $this->createRequest('LOCK', $uri, $headers);
-        $response = $this->doRequest($request);
-        
-        return $response->isSuccessful() ? Lock::parse($this, $response->getBody()) : null;
+
+        $response = $this->createRequest('LOCK', $uri, $headers);
+
+        return $this->isSuccessful($response) ? Lock::parse($this, $response->getBody()) : null;
     }
 
     /**
@@ -568,10 +541,9 @@ class WebDavClient
         $headers = array(
             'Lock-Token' => "<{$lockToken}>"
         );
-        
-        $request = $this->createRequest('UNLOCK', $uri, $headers);
-        $response = $this->doRequest($request);
-        
+
+        $response = $this->createRequest('UNLOCK', $uri, $headers);
+
         // 204 (No Content) is the default success code
         return $response->getStatusCode() == 204;
     }
@@ -586,12 +558,11 @@ class WebDavClient
     public function getSupportedMethods($uri = null)
     {
         $methods = array();
-        
-        $request = $this->createRequest('OPTIONS', $uri);
-        $response = $this->doRequest($request);
-        
+
+        $response = $this->createRequest('OPTIONS', $uri);
+
         if ($response->hasHeader('Allow')) {
-            foreach (explode(',', $response->getHeader('Allow')) as $method) {
+            foreach (explode(',', implode('\n', $response->getHeader('Allow'))) as $method) {
                 $methods[] = trim($method);
             }
         }
@@ -609,12 +580,11 @@ class WebDavClient
     public function getComplianceClasses($uri = null)
     {
         $classes = array();
-        
-        $request = $this->createRequest('OPTIONS', $uri);
-        $response = $this->doRequest($request);
-        
+
+        $response = $this->createRequest('OPTIONS', $uri);
+
         if ($response->hasHeader('Dav')) {
-            foreach (explode(',', $response->getHeader('Dav')) as $class) {
+            foreach (explode(',', implode('\n',$response->getHeader('Dav'))) as $class) {
                 $classes[] = trim($class);
             }
         }
@@ -635,50 +605,15 @@ class WebDavClient
         if (substr($uri, 0, 4) == 'http') {
             $url = $uri;
         } else {
-            $url = Url::factory($this->baseUrl)->combine($uri);
+            $url = new Url($this->baseUrl);
+            if ($uri) {
+                $url = $url->withPath($uri);
+            }
         }
         
         return (string) $url;
     }
 
-    /**
-     * Sends a single request to a WebDAV server
-     *
-     * @param HttpRequest $request
-     *            The request
-     *            
-     * @throws Exception\NoSuchResourceException
-     * @throws Exception\HttpException
-     * @return HttpResponse Returns the server response
-     */
-    protected function doRequest(HttpRequest $request)
-    {
-        $error = null;
-        $response = null;
-        
-        $this->lastRequest = $request;
-        $this->lastResponse = null;
-        
-        try {
-            $response = $request->send();
-        } catch (BadResponseException $error) {
-            $response = $error->getResponse();
-        }
-        
-        // Creates History
-        $this->lastResponse = $response;
-        
-        if ($error && $this->throwExceptions) {
-            switch ($response->getStatusCode()) {
-                case 404:
-                    throw new NoSuchResourceException('No such file or directory');
-                default:
-                    throw HttpException::factory($error);
-            }
-        }
-        
-        return $response;
-    }
 
     /**
      * Create a new request configured for the client.
@@ -692,16 +627,31 @@ class WebDavClient
      * @param string|resource $body
      *            Entity body of request
      *            
-     * @return HttpRequest Returns the created request
+     * @return \Psr\Http\Message\ResponseInterface Returns the created request
      */
     protected function createRequest($method, $uri, array $headers = null, $body = null)
     {
         $url = $this->resolveUrl($uri);
-        
-        $request = $this->getHttpClient()->createRequest($method, $url, $headers, $body, $this->requestOptions);
-        $request->setHeader('User-Agent', $this->userAgent);
-        
-        return $request;
+        $request = new HttpRequest(
+            $method,
+            $url,
+            array_merge($headers ?? [], ['User-Agent' => $this->userAgent]),
+            $body
+        );
+        $this->lastRequest = $request;
+        $response = $this->getHttpClient()->send($request, $this->requestOptions);
+        $this->lastResponse = $response;
+
+        if ($this->throwExceptions && !$this->isSuccessful($response)) {
+            switch ($response->getStatusCode()) {
+                case 404:
+                    throw new NoSuchResourceException('No such file or directory');
+                default:
+                    throw HttpException::factory($request, $response);
+            }
+        }
+
+        return $response;
     }
 
     /**
@@ -733,11 +683,11 @@ class WebDavClient
     /**
      * Get the last sent request.
      *
-     * @return string Returns the content of the last sent request
+     * @return HttpRequest|null Returns the content of the last sent request
      */
     public function getLastRequest()
     {
-        return $this->lastRequest ? (string) $this->lastRequest : null;
+        return $this->lastRequest ?: null;
     }
 
     /**
@@ -952,7 +902,7 @@ class WebDavClient
      *
      * @return HttpClient Returns the HTTP client to use
      */
-    protected function getHttpClient()
+    public function getHttpClient(): HttpClient
     {
         // @codeCoverageIgnoreStart
         if ($this->httpClient === null) {
@@ -961,5 +911,10 @@ class WebDavClient
         // @codeCoverageIgnoreEnd
         
         return $this->httpClient;
+    }
+
+    private function isSuccessful(HttpResponse $response): bool
+    {
+        return  ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) || $response->getStatusCode() === 304;
     }
 }

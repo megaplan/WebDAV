@@ -10,6 +10,8 @@
 
 namespace Grale\WebDav\Property;
 
+use DOMElement;
+
 /**
  * Specifies the nature of a resource
  *
@@ -69,7 +71,7 @@ class ResourceType extends AbstractProperty
     /**
      * @inheritdoc
      */
-    public static function fromXml(\DOMElement $element, array $xmlNamespaces = array())
+    public static function fromXml(DOMElement $element, array $xmlNamespaces = array())
     {
         $value = array();
 

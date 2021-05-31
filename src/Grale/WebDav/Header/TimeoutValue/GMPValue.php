@@ -1,36 +1,39 @@
 <?php
+
 namespace Grale\WebDav\Header\TimeoutValue;
+
+use GMP;
 
 /**
  *
  * @author samizdam
- *        
+ *
  */
 class GMPValue implements TimeoutValueInterface
 {
 
     /**
      *
-     * @var \GMP
+     * @var GMP
      */
     private $value;
 
     /**
      *
-     * @param unknown $value            
+     * @param unknown $value
      */
     public function __construct($value)
     {
-        $this->value = gmp_init((string) $value);
+        $this->value = gmp_init((string)$value);
     }
 
     /**
      *
      * (non-PHPdoc)
      *
+     * @return boolean
      * @see \Grale\WebDav\Header\TimeoutValue\TimeoutValueInterface::isInfinite()
      *
-     * @return boolean
      */
     public function isInfinite()
     {
@@ -41,9 +44,9 @@ class GMPValue implements TimeoutValueInterface
      *
      * (non-PHPdoc)
      *
+     * @return string
      * @see \Grale\WebDav\Header\TimeoutValue\TimeoutValueInterface::__toString()
      *
-     * @return string
      */
     public function __toString()
     {
@@ -54,10 +57,10 @@ class GMPValue implements TimeoutValueInterface
      *
      * (non-PHPdoc)
      *
+     * @param unknown $time
+     * @return string
      * @see \Grale\WebDav\Header\TimeoutValue\TimeoutValueInterface::getValidity()
      *
-     * @param unknown $time            
-     * @return string
      */
     public function getValidity($time)
     {

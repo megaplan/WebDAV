@@ -1,15 +1,16 @@
 <?php
+
 namespace Grale\WebDav\Header\TimeoutValue;
 
 /**
  *
  * @author samizdam
- *        
+ *
  */
 interface TimeoutValueInterface
 {
 
-    const INFINITE = - 1;
+    const INFINITE = -1;
 
     /**
      *
@@ -25,7 +26,7 @@ interface TimeoutValueInterface
 
     /**
      *
-     * @param unknown $time            
+     * @param unknown $time
      */
     public function getValidity($time);
 }
