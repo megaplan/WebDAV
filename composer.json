@@ -14,9 +14,9 @@
     ],
     "require": {
         "php": ">=7.0",
-        "guzzlehttp/guzzle": "^6.3",
+        "guzzlehttp/guzzle": "^7.4",
         "psr/log": "~1.0",
-        "php-http/message-factory": "~1.0",
+        "psr/http-factory": "~1.0",
         "ext-dom": "*"
     },
     "require-dev": {
