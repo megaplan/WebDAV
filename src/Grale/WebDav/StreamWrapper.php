@@ -99,7 +99,7 @@ class StreamWrapper
      * @return bool Returns true on success or false on failure
      * @throws \RuntimeException If a stream wrapper has already been registered
      */
-    public static function register(array $options = null, WebDavClient $client = null)
+    public static function register(?array $options = null, ?WebDavClient $client = null): bool
     {
         $result = true;
 
@@ -130,7 +130,7 @@ class StreamWrapper
     /**
      * @return bool Returns true on success or false on failure
      */
-    public static function unregister()
+    public static function unregister(): bool
     {
         $result = true;
 
@@ -146,7 +146,7 @@ class StreamWrapper
     /**
      * @return WebDavClient Returns the default WebDAV Client to use with the stream wrapper
      */
-    public static function getDefaultClient()
+    public static function getDefaultClient(): WebDavClient
     {
         return new WebDavClient();
     }
@@ -162,9 +162,8 @@ class StreamWrapper
      * @return bool Returns true on success or false on failure
      * @link http://www.php.net/manual/en/streamwrapper.stream-open.php
      *
-     * @internal
      */
-    public function stream_open($path, $mode, $options, &$openedPath)
+    public function stream_open($path, $mode, $options, &$openedPath): bool
     {
         $url = null;
 
@@ -222,7 +221,7 @@ class StreamWrapper
      *
      * @internal
      */
-    public function stream_read($bytes)
+    public function stream_read($bytes): string
     {
         $data = '';
 
@@ -242,7 +241,7 @@ class StreamWrapper
      *
      * @internal
      */
-    public function stream_write($data)
+    public function stream_write($data): int
     {
         $bytes = 0;
 
@@ -262,7 +261,7 @@ class StreamWrapper
      *
      * @internal
      */
-    public function stream_flush()
+    public function stream_flush(): bool
     {
         $result = false;
 
@@ -294,7 +293,7 @@ class StreamWrapper
      *
      * @internal
      */
-    public function stream_eof()
+    public function stream_eof(): bool
     {
         return $this->stream->eof();
     }
@@ -305,7 +304,7 @@ class StreamWrapper
      *
      * @internal
      */
-    public function stream_tell()
+    public function stream_tell(): int
     {
         return $this->stream->tell();
     }
@@ -332,7 +331,7 @@ class StreamWrapper
      *
      * @internal
      */
-    public function stream_lock($operation)
+    public function stream_lock($operation): bool
     {
         try {
             // We don't care about LOCK_NB
@@ -406,7 +405,7 @@ class StreamWrapper
      *
      * @internal
      */
-    public function rename($old, $new)
+    public function rename($old, $new): bool
     {
         try {
             // Retrieve the context options
@@ -435,7 +434,7 @@ class StreamWrapper
      *
      * @internal
      */
-    public function unlink($path)
+    public function unlink($path): bool
     {
         try {
             // Retrieve the context options
@@ -467,9 +466,8 @@ class StreamWrapper
      * @return bool Returns true on success or false on failure
      * @link http://www.php.net/manual/en/streamwrapper.mkdir.php
      *
-     * @internal
      */
-    public function mkdir($path, $mode, $options)
+    public function mkdir($path, $mode, $options): bool
     {
         try {
             if ($options & STREAM_MKDIR_RECURSIVE) {
@@ -504,9 +502,8 @@ class StreamWrapper
      * @return bool Returns true on success or false on failure
      * @link http://www.php.net/manual/en/streamwrapper.rmdir.php
      *
-     * @internal
      */
-    public function rmdir($path, $options)
+    public function rmdir($path, $options): bool
     {
         try {
             // Retrieve the context options
@@ -539,7 +536,7 @@ class StreamWrapper
      *
      * @internal
      */
-    public function dir_opendir($path, $options)
+    public function dir_opendir($path, $options): bool
     {
         $result = true;
 
@@ -597,7 +594,7 @@ class StreamWrapper
      *
      * @internal
      */
-    public function dir_rewinddir()
+    public function dir_rewinddir(): bool
     {
         $this->clearStatCache();
         $this->iterator->rewind();
@@ -628,7 +625,6 @@ class StreamWrapper
      * @return array Returns an array of file stat data
      * @link http://www.php.net/manual/en/streamwrapper.url-stat.php
      *
-     * @internal
      */
     public function url_stat($path, $flags)
     {
