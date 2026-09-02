@@ -113,7 +113,7 @@ class WebDavClient
      *            Configuration settings
      * @see setConfig
      */
-    public function __construct($baseUrl = '', array $config = null)
+    public function __construct($baseUrl = '', ?array $config = null)
     {
         $this->setBaseUrl($baseUrl);
         $this->userAgent = $this->getDefaultUserAgent();
@@ -208,7 +208,7 @@ class WebDavClient
      *            
      * @return bool Returns true on success or false on failure
      */
-    public function put($uri, $body = null, array $options = null)
+    public function put($uri, $body = null, ?array $options = null)
     {
         $headers = $options['headers'] ?? array();
         if (isset($options['locktoken'])) {
@@ -237,7 +237,7 @@ class WebDavClient
      *            
      * @return bool Returns true on success or false on failure
      */
-    public function delete($uri, array $options = null)
+    public function delete($uri, ?array $options = null)
     {
         $headers = $options['headers'] ?? array();
         if (isset($options['locktoken'])) {
@@ -266,7 +266,7 @@ class WebDavClient
      *            
      * @return bool Returns true on success or false on failure
      */
-    public function mkcol($uri, array $options = null)
+    public function mkcol($uri, ?array $options = null)
     {
         $headers = $options['headers'] ?? array();
         if (isset($options['locktoken'])) {
@@ -299,7 +299,7 @@ class WebDavClient
      *            
      * @return bool Returns true on success or false on failure
      */
-    public function move($uri, $destination, array $options = null)
+    public function move($uri, $destination, ?array $options = null)
     {
         $recursive = isset($options['recursive']) ? (bool) $options['recursive'] : false;
         $overwrite = isset($options['overwrite']) ? (bool) $options['overwrite'] : true;
@@ -347,7 +347,7 @@ class WebDavClient
      *        
      * @todo Detect an attempt to copy a resource to itself, and throw an exception
      */
-    public function copy($uri, $destination, array $options = null)
+    public function copy($uri, $destination, ?array $options = null)
     {
         $recursive = isset($options['recursive']) ? (bool) $options['recursive'] : false;
         $overwrite = isset($options['overwrite']) ? (bool) $options['overwrite'] : true;
@@ -380,7 +380,7 @@ class WebDavClient
      *            
      * @return MultiStatus
      */
-    public function propfind($uri, array $options = null)
+    public function propfind($uri, ?array $options = null)
     {
         $depth = isset($options['depth']) ? (int) $options['depth'] : 0;
         $properties = isset($options['properties']) ? $options['properties'] : array();
@@ -444,7 +444,7 @@ class WebDavClient
      * @throws \RuntimeException When the server returns an unexpected response. Actually, 207 (Multi-Status) responses are not supposed
      *         to be received from server, as far as multi-resource lock requests are not supported.
      */
-    public function createLock($uri, array $options = null)
+    public function createLock($uri, ?array $options = null)
     {
         $scope = isset($options['scope']) ? $options['scope'] : Lock::EXCLUSIVE;
         
@@ -629,7 +629,7 @@ class WebDavClient
      *            
      * @return \Psr\Http\Message\ResponseInterface Returns the created request
      */
-    protected function createRequest($method, $uri, array $headers = null, $body = null)
+    protected function createRequest($method, $uri, ?array $headers = null, $body = null)
     {
         $url = $this->resolveUrl($uri);
         $request = new HttpRequest(
