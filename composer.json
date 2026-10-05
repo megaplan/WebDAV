@@ -1,8 +1,8 @@
 {
-    "name": "grale/webdav",
+    "name": "megaplan/webdav",
     "description": "A simple PHP WebDAV client and stream wrapper",
     "keywords": ["PHP","WebDAV","Stream","Wrapper"],
-    "homepage": "https://github.com/gletournel/WebDAV",
+    "homepage": "https://github.com/megaplan/WebDAV",
     "type": "library",
     "license": "MIT",
     "minimum-stability": "dev",
@@ -11,6 +11,10 @@
         {
             "name": "Geoffroy Letournel",
             "email": "geoffroy.letournel@gmail.com"
+        },
+        {
+            "name": "Megaplan",
+            "email": "support@megaplan.ru"
         }
     ],
     "require": {
