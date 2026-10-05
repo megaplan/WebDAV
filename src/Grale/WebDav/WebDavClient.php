@@ -412,8 +412,8 @@ class WebDavClient
         $body = $dom->saveXML();
 
         $response = $this->createRequest('PROPFIND', $uri, array(
-            'Content-Type' => 'Content-Type: text/xml; charset="utf-8"',
-            'Depth' => $depth
+            'Content-Type' => 'text/xml; charset="utf-8"',
+            'Depth' => (string) $depth
         ), $body);
         
 
