@@ -20,9 +20,7 @@
     "require": {
         "php": ">=7.2.5",
         "guzzlehttp/guzzle": "^7.15.2",
-        "guzzlehttp/psr7": "^2.12.3",
         "psr/log": "^1.0 || ^2.0 || ^3.0",
-        "psr/http-factory": "~1.0",
         "ext-dom": "*"
     },
     "require-dev": {
